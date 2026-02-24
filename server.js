@@ -1,25 +1,71 @@
 import express from "express";
 
 const app = express();
-app.use(express.json({ limit: "20mb" }));
+app.use(express.json({ limit: "35mb" }));
 
 app.get("/health", (req, res) => res.send("ok"));
 
 app.post("/api/analyze", async (req, res) => {
   try {
-    // ✅ Forward the app request EXACTLY as-is
+    const { imageBase64, vibe, season, recentFixes = [], learningProfile = "", onboardingProfile = "" } = req.body;
+
+    if (!imageBase64) return res.status(400).json({ error: "Missing imageBase64" });
+
+    const dataURL = `data:image/jpeg;base64,${imageBase64}`;
+
+    // ✅ PUT YOUR FULL RUBRIC TEXT HERE (paste the big one)
+    const rubric = `
+PASTE YOUR FULL RUBRIC HERE (the huge one from Swift)
+`;
+
+    const openaiBody = {
+      model: "gpt-4o-mini",
+      temperature: 0,
+      input: [
+        {
+          role: "system",
+          content: [{ type: "input_text", text: "You are DRESSD. Be kind, direct, and specific. No filler." }]
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text: `${rubric}
+
+VIBE SELECTED BY USER: "${vibe}"
+SEASON: "${season}"
+
+RECENT SUGGESTIONS (DO NOT REPEAT THESE FIX IDEAS):
+${recentFixes.length ? recentFixes.map(x => `- ${x}`).join("\n") : "- none"}
+
+USER RESPONSE PROFILE (ADAPT TO THIS USER):
+${learningProfile}
+
+${onboardingProfile}
+
+TASK:
+Analyse the image and return JSON only.
+`
+            },
+            { type: "input_image", image_url: dataURL }
+          ]
+        }
+      ]
+      // If you want the json_schema enforced, we add it next (after this works once).
+    };
+
     const r = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      body: JSON.stringify(req.body) // ⭐ THIS is the fix
+      body: JSON.stringify(openaiBody)
     });
 
     const text = await r.text();
     res.status(r.status).send(text);
-
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
