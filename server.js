@@ -7,29 +7,19 @@ app.get("/health", (req, res) => res.send("ok"));
 
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { imageBase64, vibe, season } = req.body;
-    const dataURL = `data:image/jpeg;base64,${imageBase64}`;
-
+    // ✅ Forward the app request EXACTLY as-is
     const r = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
       },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0,
-        input: [{
-          role: "user",
-          content: [
-            { type: "input_text", text: `VIBE: ${vibe}\nSEASON: ${season}\nReturn JSON only.` },
-            { type: "input_image", image_url: dataURL }
-          ]
-        }]
-      })
+      body: JSON.stringify(req.body) // ⭐ THIS is the fix
     });
 
-    res.status(r.status).send(await r.text());
+    const text = await r.text();
+    res.status(r.status).send(text);
+
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
