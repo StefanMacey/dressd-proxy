@@ -32,7 +32,10 @@ SCORING RUBRIC (use FULL range 2–99, do NOT cluster around 60–75):
 - 93–99: exceptional
 
 ACCURACY RULES:
-- Only recommend changes visible in THIS photo.
+- If clothing is visible on a person, this IS an outfit.
+- Only set "isOutfit": false if there are NO clothes visible OR the image is clearly not fashion related.
+- Bad outfit ≠ not an outfit.
+- Even if inappropriate for the selected vibe/season, still score it.
 - If unsure say "unclear from photo".
 - NEVER suggest tuck if already tucked.
 - NEVER suggest tailoring if already fitted.
