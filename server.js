@@ -1,14 +1,11 @@
 import express from "express";
-
 const app = express();
-
 app.use(express.json({ limit: "35mb" }));
 
 app.get("/health", (req, res) => res.send("ok"));
 
 app.post("/api/analyze", async (req, res) => {
   try {
-
     const {
       imageBase64,
       vibe,
@@ -33,15 +30,23 @@ SCORING RUBRIC (use FULL range 2–99, do NOT cluster around 60–75):
 - 61–80: strong
 - 81–92: very good
 - 93–99: exceptional
+
 ACCURACY RULES:
 - Only recommend changes visible in THIS photo.
 - If unsure say "unclear from photo".
 - NEVER suggest tuck if already tucked.
 - NEVER suggest tailoring if already fitted.
+
 VARIETY RULES:
 - Avoid repetitive seasonal clichés.
 - Focus on silhouette before accessories.
 - Max 1 accessory suggestion.
+
+TOP FIX RULES:
+- Return 3 to 5 top fixes.
+- Prioritize silhouette and fit before accessories.
+- Order fixes by impact (highest impact first).
+
 MEMORY RULES:
 - Avoid repeating recent fixes.
 `;
@@ -64,11 +69,14 @@ MEMORY RULES:
               text: `${rubric}
 VIBE SELECTED BY USER: "${vibe}"
 SEASON: "${season}"
+
 RECENT SUGGESTIONS (DO NOT REPEAT THESE FIX IDEAS):
 ${recentFixes.length ? recentFixes.map(x => `- ${x}`).join("\n") : "- none"}
+
 USER RESPONSE PROFILE:
 ${learningProfile}
 ${onboardingProfile}
+
 TASK:
 Return JSON ONLY that matches the schema.
 `
@@ -77,8 +85,6 @@ Return JSON ONLY that matches the schema.
           ]
         }
       ],
-
-      // ⭐ THIS FIXES YOUR DECODE ERRORS
       text: {
         format: {
           type: "json_schema",
@@ -124,6 +130,8 @@ Return JSON ONLY that matches the schema.
 
               topFixes: {
                 type: "array",
+                minItems: 3,
+                maxItems: 5,
                 items: {
                   type: "object",
                   additionalProperties: false,
@@ -140,6 +148,7 @@ Return JSON ONLY that matches the schema.
 
               accessoryIdeas: {
                 type: "array",
+                maxItems: 1,
                 items: {
                   type: "object",
                   additionalProperties: false,
@@ -172,7 +181,6 @@ Return JSON ONLY that matches the schema.
     });
 
     const text = await r.text();
-
     res.status(r.status).send(text);
 
   } catch (e) {
